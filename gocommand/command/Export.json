@@ -1,0 +1,71 @@
+{
+	"BorderTransportMeans": {
+		"ID": "CSCLGLOBE",
+		"IdentificationTypeCode": 11,
+		"RegistrationNationalityCode": "GB",
+		"ModeCode": 1
+	},
+	"Consignment": {
+		"CarrierId": "GB025115100010",
+		"FreightPaymentMethod": "D",
+		"Itinerary": [
+			{"RoutingCountryCode": "GB"}, 
+			{"RoutingCountryCode": "CA"}, 
+			{"RoutingCountryCode": "US"}
+		]
+	},
+	"DeclarantId": "GB427168118378",
+	"ExitOffice": "GB000040",
+	"Exporter": "GB427168118378",
+	"GoodsShipment": {
+		"Consignee": {
+			"Name": "Packings Import Incorporated",
+			"Address": {
+				"Line": "1 Bags Avenue",
+				"CityName": "New York",
+				"PostcodeID": "NY1 234",
+				"CountryCode": "US"
+			}
+		},
+		"Consignment": {
+			"ContainerCode": 1,
+			"DepartureTransportMeans": {
+				"ID": "CSCLGLOBE",
+				"IdentificationTypeCode": 11
+			},
+			"GoodsLocation": {
+				"Name": "DVRDOVDVR",
+				"TypeCode": "A",
+				"AddressTypeCode": "U",
+				"AddressCountryCode": "GB"
+			},
+			"TransportEquipment": [
+				{"ID": "CONU1234567", "Seal": [{"ID": "333"}]}
+			]
+		},
+		"Destination": "US",
+		"ExportCountry": "GB",
+		"GovernmentAgencyGoodsItems": [
+			{
+			"StatisticalValueAmount": {"CurrencyId": "GBP", "Amount": 200},
+			"TransactionNatureCode": 11,
+			"AdditionalInformation": {"StatementCode": "00400", "StatementDescription": "EXPORTER"},
+			"Commodity": {
+				"Description": "Widgets, sprackets and golden hammers",
+				"Classification": [
+					{"ID": "46021910", "IdentificationTypeCode": "TSP"},
+					{"ID": "VATZ", "IdentificationTypeCode": "GN"}
+				],
+				"GoodsMeasure": {"GrossMassMeasure": 10, "NetWeightMeasure": 5}
+			},
+			"GovernmentProcedure": [
+				{"CurrentCode": "10", "PreviousCode": "40"},
+				{"CurrentCode": "000"}
+			],
+			"Packaging": [
+				{"MarksNumbersID": "2379261ETT", "Quantity": 10, "TypeCode": "PK"}
+			]
+			}
+		]
+	}
+}

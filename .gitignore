@@ -1,0 +1,9 @@
+*.zip
+node_modules
+.terraform*
+terraform.*
+bootstrap
+go.sum
+package.json
+package-lock.json
+.DS_Store
