@@ -23,6 +23,7 @@ It is recommended that you create a fresh account specifically for this service 
 ### Build Your Services
 1. Clone this repo to your local environment.
 2. Create a terraform.tfvars in your terraform directory. This must contain the following:
+
 	CLIENT_ID = *the client id associated with your HMRC application*
 	REDIRECT_URI = *the oauth redirect URL set up for your application* e.g. https://your.domain/oauth/redirect
 	CLIENT_SECRET = *the client secret associated with your HMRC application*
@@ -32,21 +33,30 @@ It is recommended that you create a fresh account specifically for this service 
 	SMTP_PORT = *SMTP port for your outbound email provider*
 	SMTP_USER = *username of your outbound email account*
 	SMTP_PASSWORD = *password for your outbound email account*
+
 3. Compile Lambdas where necessary.
 	3.1 gocommand
+
 		cd to the gocommand directory
 		go mod tidy
 		GOOS=linux GOARCH=amd64 go build -o bootstrap
+
 	3.2 goparser
+
 		cd to the goparser directory
 		go mod tidy
 		GOOS=linux GOARCH=amd64 go build -o bootstrap
+
 	3.3 reply
+
 		cd to the reply directory
 		zip ../reply.zip \*.mjs
+
 	3.4 submit
+
 		cd to the submit directory
 		zip ../submit.zip \*.mjs apis.json
+		
 4. Set your AWS environment to point to your new AWS account - export AWS_PROFILE=cds
 5. run terraform init
 6. run terraform validate
