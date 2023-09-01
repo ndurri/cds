@@ -92,6 +92,7 @@ func handleLambda(event events.S3Event) {
 func init() {
 	xmlfactory.Register("inventoryLinkingConsolidationRequest", (*cds.Consolidation)(nil))
 	xmlfactory.Register("inventoryLinkingMovementRequest", (*cds.Movement)(nil))
+	xmlfactory.Register("inventoryLinkingQueryRequest", (*cds.Query)(nil))
 	xmlfactory.Register("MetaData", (*cds.MetaData)(nil))	
 }
 

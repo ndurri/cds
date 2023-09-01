@@ -26,6 +26,7 @@ var handlers = map[string]Handler{
 	"EAL": Handler{Handler: processEAL, DocType: cds.MovementType},
 	"EDL": Handler{Handler: processEDL, DocType: cds.MovementType},
 	"EXP": Handler{Handler: processExport, DocType: cds.DeclarationType},
+	"QUE": Handler{Handler: processQUE, DocType: cds.MovementType},
 }
 
 var emulatorRoutes map[string]string = map[string]string{
@@ -47,6 +48,16 @@ func Parse(content string) (string, cds.DocType, error) {
 		}
 	}
 	return "", cds.UndefinedType, nil
+}
+
+func processQUE(command string) (string, error) {
+	que := cds.MakeQuery()
+	processQueryArgs(command, que)
+	content, err := xml.MarshalIndent(que, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }
 
 func processEAC(command string) (string, error) {
@@ -183,6 +194,20 @@ func processMovementArgs(args string, movement *cds.Movement) {
 			movement.SetMUCR(arg)
 		} else if arg == "MUCR" {
 			movement.SetMUCR(makeMUCR())
+		}
+	}
+}
+
+func processQueryArgs(args string, query *cds.Query) {
+	for _, arg := range strings.Split(strings.ToUpper(args), " ")[1:] {
+		arg = strings.TrimSpace(arg)
+		if arg == "" {
+			continue
+		}
+		if cds.IsDUCR(arg) {
+			query.SetDUCR(arg)
+		} else if cds.IsMUCR(arg) {
+			query.SetMUCR(arg)
 		}
 	}
 }

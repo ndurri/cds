@@ -30,11 +30,19 @@ func Parse(r io.Reader) (*Message, error) {
 	if err := parseBody(message.Header, message.Body, parts); err != nil {
 		return nil, err
 	}
+	var xmlContent string
+	if parts["text/xml"] != "" {
+		xmlContent = parts["text/xml"]
+	} else if parts["application/xml"] != "" {
+		xmlContent = parts["application/xml"]		
+	} else {
+		xmlContent = ""
+	}
 	parsed := Message{
 		From: from.Address,
 		Subject: message.Header.Get("Subject"),
 		TextContent: strings.TrimSpace(parts["text/plain"]),
-		XMLContent: parts["text/xml"],
+		XMLContent: xmlContent,
 	}
 	return &parsed, nil
 }
@@ -48,7 +56,7 @@ func parseBody(header Header, body io.Reader, parts map[string]string) error {
 	switch mediaType {
 	case "multipart/alternative", "multipart/related", "multipart/mixed":
 		return parseMultipart(boundary, body, parts)
-	case "text/plain", "text/xml":
+	case "text/plain", "text/xml", "application/xml":
 		content, err := io.ReadAll(body)
 		if err != nil {
 			return err

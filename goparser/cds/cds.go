@@ -8,6 +8,7 @@ const (
 	DeclarationType = "Declaration"
 	AmendmentType = "Amendment"
 	CancellationType = "Cancellation"
+	QueryType = "Query"
 )
 
 type Request interface {
@@ -16,6 +17,7 @@ type Request interface {
 
 type Consolidation struct {}
 type Movement struct {}
+type Query struct {}
 
 type MetaData struct {
 	Declaration *Declaration
@@ -28,6 +30,7 @@ type Declaration struct {
 
 func (r *Consolidation) DocType() DocType {return MovementType}
 func (r *Movement) DocType() DocType {return MovementType}
+func (r *Query) DocType() DocType {return MovementType}
 func (r *MetaData) DocType() DocType {
 	if r.Declaration.FunctionCode == 9 {
 		return DeclarationType
