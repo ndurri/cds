@@ -33,11 +33,11 @@ const (
 )
 
 var (
-	DUCRRegEx    = regexp.MustCompile(`[0-9][A-Z][A-Z][0-9A-Z\(\)\-/]{6,32}`)
-	MUCRARegEx   = regexp.MustCompile(`A:[0-9A-Z]{3}[0-9]{8}`)
-	MUCRCRegEx   = regexp.MustCompile(`C:[A-Z]{3}[0-9A-Z]{3,30}`)
-	MUCRGB1RegEx = regexp.MustCompile(`GB/[0-9A-Z]{3,4}-[0-9A-Z]{5,28}`)
-	MUCRGB2RegEx = regexp.MustCompile(`GB/[0-9A-Z]{9,12}-[0-9A-Z]{1,23}`)
+	DUCRRegEx    = regexp.MustCompile(`^[0-9][A-Z][A-Z][0-9A-Z\(\)\-/]{6,32}$`)
+	MUCRARegEx   = regexp.MustCompile(`^A:[0-9A-Z]{3}[0-9]{8}$`)
+	MUCRCRegEx   = regexp.MustCompile(`^C:[A-Z]{3}[0-9A-Z]{3,30}$`)
+	MUCRGB1RegEx = regexp.MustCompile(`^GB/[0-9A-Z]{3,4}-[0-9A-Z]{5,28}$`)
+	MUCRGB2RegEx = regexp.MustCompile(`^GB/[0-9A-Z]{9,12}-[0-9A-Z]{1,23}$`)
 )
 
 var Undefined = errors.New("Unable to detect UCR type")
@@ -97,14 +97,10 @@ func IsMUCR(arg string) bool {
 	}
 	arg = strings.ToUpper(arg)
 	switch arg[0:2] {
-	case "A:":
-		return MUCRARegEx.MatchString(arg)
-	case "C:":
-		return MUCRCRegEx.MatchString(arg)
-	case "GB":
-		return MUCRGB1RegEx.MatchString(arg) || MUCRGB2RegEx.MatchString(arg)
-	default:
-		return false
+		case "A:": return MUCRARegEx.MatchString(arg)
+		case "C:": return MUCRCRegEx.MatchString(arg)
+		case "GB": return MUCRGB1RegEx.MatchString(arg) || MUCRGB2RegEx.MatchString(arg)
+		default: return false
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"gocommand/cds"
 	"strings"
 	"time"
+	"fmt"
 	_ "embed"
 )
 
@@ -183,17 +184,23 @@ func processDecArgs(args string, dec *cds.Declaration) {
 }
 
 func processMovementArgs(args string, movement *cds.Movement) {
+	waitNext := 0
 	for _, arg := range strings.Split(strings.ToUpper(args), " ")[1:] {
 		arg = strings.TrimSpace(arg)
 		if arg == "" {
 			continue
 		}
-		if cds.IsDUCR(arg) {
+		if waitNext == 1 {
+			movement.GoodsLocation = arg
+			waitNext = 0
+		} else if cds.IsDUCR(arg) {
 			movement.SetDUCR(arg)
 		} else if cds.IsMUCR(arg) {
 			movement.SetMUCR(arg)
 		} else if arg == "MUCR" {
 			movement.SetMUCR(makeMUCR())
+		} else if arg == "LOC" {
+			waitNext = 1
 		}
 	}
 }
@@ -218,6 +225,8 @@ func processConsolidationArgs(args string, c *cds.Consolidation) {
 		if arg == "" {
 			continue
 		}
+		fmt.Printf("%s: isMUCR? %v\n", arg, cds.IsMUCR(arg))
+		fmt.Printf("%s: isDUCR? %v\n", arg, cds.IsDUCR(arg))
 		if cds.IsDUCR(arg) {
 			c.SetChild(arg, "D")
 		} else if cds.IsMUCR(arg) {
@@ -226,6 +235,7 @@ func processConsolidationArgs(args string, c *cds.Consolidation) {
 			} else {
 				c.MasterUCR = arg
 			}
+			fmt.Printf("---> %v\n", *c)
 		} else if arg == "MUCR" {
 			if c.MasterUCR != "" {
 				c.SetChild(makeMUCR(), "M")

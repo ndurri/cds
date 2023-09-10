@@ -8,7 +8,7 @@ type Consolidation struct {
 	XMLName     xml.Name `xml:"inv:inventoryLinkingConsolidationRequest"`
 	Xmlns       string   `xml:"xmlns:inv,attr"`
 	MessageCode string   `xml:"inv:messageCode"`
-	MasterUCR   string   `xml:"inv:masterUCR"`
+	MasterUCR   string   `xml:"inv:masterUCR,omitempty"`
 	ChildUCR    *UCR     `xml:"inv:ucrBlock,omitempty"`
 }
 

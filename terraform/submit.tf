@@ -29,14 +29,15 @@ resource "aws_iam_role_policy_attachment" "submit-userdata-write" {
 }
 
 resource "aws_lambda_function" "submit" {
-	filename      = "../submit.zip"
+	filename      = "../gosubmit.zip"
 	function_name = "submit"
 	role          = aws_iam_role.submit.arn
-	handler       = "app.handler"
-	runtime = "nodejs18.x"
-	memory_size = 256
+	handler       = "bootstrap"
+	runtime = "provided.al2"
+	memory_size = 128
+	architectures = ["arm64"]
 
-	source_code_hash = filebase64sha256("../submit.zip")
+	source_code_hash = filebase64sha256("../gosubmit.zip")
 
 	environment {
 		variables = {
