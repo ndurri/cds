@@ -165,7 +165,7 @@ type PreviousDocument struct {
 	CategoryCode string
 	ID           string
 	TypeCode     string
-	Line         int `xml:"LineNumeric"`
+	Line         *int `xml:"LineNumeric,omitempty"`
 }
 
 func (g GoodsItems) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
@@ -249,11 +249,12 @@ func MakePrelodgedExport() *Declaration {
 }
 
 func (d *Declaration) SetDUCR(ducr string) {
+	line := 1
 	doc := PreviousDocument{
 		CategoryCode: "Z",
 		ID:           strings.ToUpper(ducr),
 		TypeCode:     "DCR",
-		Line:         1,
+		Line:         &line,
 	}
 	d.GoodsShipment.PreviousDocuments = append(d.GoodsShipment.PreviousDocuments, doc)
 }
@@ -263,7 +264,6 @@ func (d *Declaration) SetMUCR(mucr string) {
 		CategoryCode: "Z",
 		ID:           strings.ToUpper(mucr),
 		TypeCode:     "MCR",
-		Line:         1,
 	}
 	d.GoodsShipment.PreviousDocuments = append(d.GoodsShipment.PreviousDocuments, doc)
 }

@@ -172,6 +172,8 @@ func processDecArgs(args string, dec *cds.Declaration) {
 			waitNext = 0
 		} else if cds.IsDUCR(arg) {
 			dec.SetDUCR(arg)
+		} else if cds.IsMUCR(arg) {
+			dec.SetMUCR(arg)
 		} else if isRoute(arg) {
 			desc, _ := emulatorRoutes[argU]
 			dec.SetGoodsDescription(desc)
@@ -193,6 +195,9 @@ func processMovementArgs(args string, movement *cds.Movement) {
 		if waitNext == 1 {
 			movement.GoodsLocation = arg
 			waitNext = 0
+		} else if waitNext == 2 {
+			movement.MasterOpt = strings.ToUpper(arg)
+			waitNext = 0
 		} else if cds.IsDUCR(arg) {
 			movement.SetDUCR(arg)
 		} else if cds.IsMUCR(arg) {
@@ -201,6 +206,8 @@ func processMovementArgs(args string, movement *cds.Movement) {
 			movement.SetMUCR(makeMUCR())
 		} else if arg == "LOC" {
 			waitNext = 1
+		} else if arg == "MASTEROPT" {
+			waitNext = 2
 		}
 	}
 }
