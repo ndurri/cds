@@ -36,7 +36,7 @@ var emulatorRoutes map[string]string = map[string]string{
 	"R3": "ttdocnonblockingU",
 }
 
-func Parse(content string) (string, cds.DocType, error) {
+func Parse(content string) (string, error) {
 	lines := strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n")
 	for _, line := range lines {
 		if len(line) < 3 {
@@ -45,10 +45,10 @@ func Parse(content string) (string, cds.DocType, error) {
 		handler, prs := handlers[strings.ToUpper(line)[0:3]]
 		if prs {
 			doc, err := handler.Handler(line)
-			return doc, handler.DocType, err
+			return doc, err
 		}
 	}
-	return "", cds.UndefinedType, nil
+	return "", nil
 }
 
 func processQUE(command string) (string, error) {

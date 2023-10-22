@@ -25,6 +25,7 @@ type APIResponse struct {
 	Body string
 }
 
+var APIHost string
 var apis = map[string]*API{}
 
 func init() {
@@ -43,7 +44,7 @@ func GetAPI(doctype string) (*API, error) {
 
 func (api *API) Call(token string, body string) (*APIResponse, error) {
 	reader := strings.NewReader(body)
-	req, err := http.NewRequest(http.MethodPost, api.Endpoint, reader)
+	req, err := http.NewRequest(http.MethodPost, APIHost + api.Endpoint, reader)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +52,7 @@ func (api *API) Call(token string, body string) (*APIResponse, error) {
 		req.Header.Add(name, value)
 	}
 	req.Header.Add("authorization", "Bearer " + token)
-	fmt.Printf("Calling %s with access token %s.\n", api.Endpoint, token)
+	fmt.Printf("Calling %s with access token %s.\n", APIHost + api.Endpoint, token)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -62,6 +63,7 @@ func (api *API) Call(token string, body string) (*APIResponse, error) {
 		return nil, err
 	}
 	conversationId := res.Header.Get("x-conversation-id")
+	fmt.Printf("ConversationId: %s\n", conversationId)
 	return &APIResponse{StatusCode: res.StatusCode, ConversationId: conversationId, Body: string(content),}, nil
 }
 

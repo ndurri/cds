@@ -3,10 +3,10 @@ package main
 import (
 	"os"
 	"fmt"
-	"strings"
 	"gosubmit/s3"
 	"gosubmit/oauth"
 	"gosubmit/api"
+	"encoding/json"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -16,7 +16,6 @@ type Request struct {
 	From string
 	Subject string
 	Command string
-	Submitter string
 	DocType string
 	ResponseUUID string
 	ResponseStatus int
@@ -25,6 +24,7 @@ type Request struct {
 
 var movSubmitter string
 var decSubmitter string
+var appBucket string
 
 var tokenCache = map[string]*oauth.Token{}
 
@@ -69,22 +69,19 @@ func checkError(err error) {
 	}
 }
 
-func lambdaMain(event events.S3Event) {
-	bucket := event.Records[0].S3.Bucket.Name
-	key := event.Records[0].S3.Object.Key
-	uuid := strings.Split(key, "/")[1]
-	fmt.Printf("Processing request %s\n", uuid)
+func lambdaMain(event events.SQSEvent) {
 	request := Request{}
-	if err := s3.LoadJSON(bucket, "requests/" + uuid, &request); err != nil {
+	if err := json.Unmarshal([]byte(event.Records[0].Body), &request); err != nil {
 		fmt.Println(err)
 		return
 	}
+	fmt.Printf("Processing request %s\n", request.UUID)
 	submitter := getSubmitter(request.DocType)
 	token, err := getValidToken(submitter)
 	checkError(err)
 	api, err := api.GetAPI(request.DocType)
 	checkError(err)
-	payload, err := s3.Load(bucket, "payloads/" + uuid)
+	payload, err := s3.Load(appBucket, "payloads/" + request.UUID)
 	checkError(err)
 	resp, err := api.Call(token.AccessToken, payload)
 	checkError(err)
@@ -95,12 +92,12 @@ func lambdaMain(event events.S3Event) {
 	request.ResponseUUID = resp.ConversationId
 	request.ResponseStatus = resp.StatusCode
 	request.ResponseBody = resp.Body
-	err = s3.SaveJSON(bucket, "requests/" + uuid, request)
+	err = s3.SaveJSON(appBucket, "requests/" + request.UUID, request)
 	checkError(err)
 	if resp.Ok() {
-		err = s3.SaveJSON(bucket, "responses/" + request.ResponseUUID, request)
+		err = s3.SaveJSON(appBucket, "responses/" + request.ResponseUUID, request)
 	} else {
-		err = s3.SaveJSON(bucket, "failed/" + uuid, request)
+		err = s3.SaveJSON(appBucket, "failed/" + request.UUID, request)
 	}
 	checkError(err)
 	fmt.Println("Finished.")
@@ -109,9 +106,11 @@ func lambdaMain(event events.S3Event) {
 func main() {
 	movSubmitter = os.Getenv("MOV_SUBMITTER")
 	decSubmitter = os.Getenv("DEC_SUBMITTER")
-	oauth.TokenURL = os.Getenv("TOKEN_URL")
+	appBucket = os.Getenv("APPDATA_BUCKET")
 	oauth.ClientId = os.Getenv("CLIENT_ID")
 	oauth.ClientSecret = os.Getenv("CLIENT_SECRET")
 	oauth.TokenBucket = os.Getenv("TOKEN_BUCKET")
+	api.APIHost = os.Getenv("API_HOST")
+	oauth.TokenHost = api.APIHost
 	lambda.Start(lambdaMain)
 }
