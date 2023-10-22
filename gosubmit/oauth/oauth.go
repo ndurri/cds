@@ -11,7 +11,7 @@ import (
 	"errors"
 )
 
-var TokenURL string
+var TokenHost string
 var ClientId string
 var ClientSecret string
 var TokenBucket string
@@ -52,7 +52,7 @@ func (t *Token) Refresh() (*Token, error) {
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {t.RefreshToken},
 	}
-	res, err := http.PostForm(TokenURL, params)
+	res, err := http.PostForm(TokenHost + "/oauth/token", params)
 	if err != nil {
 		return nil, err
 	}
@@ -83,5 +83,10 @@ func (t *Token) Save() error {
 	if err != nil {
 		return err
 	}
-	return s3.SaveJSON(TokenBucket, "tokens/" + t.id, string(content))
+	err = s3.Save(TokenBucket, "tokens/" + t.id, string(content))
+	if err != nil {
+		return err
+	}
+	t.isNew = false
+	return nil
 }

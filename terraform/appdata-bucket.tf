@@ -55,18 +55,6 @@ resource "aws_s3_bucket_notification" "appdata_notifications" {
   }
 
   lambda_function {
-    lambda_function_arn = aws_lambda_function.processCommand.arn
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "commands/"
-  }
-
-  lambda_function {
-    lambda_function_arn = aws_lambda_function.submit.arn
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "payloads/"
-  }
-
-  lambda_function {
     lambda_function_arn = aws_lambda_function.reply.arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = "payload-in/"

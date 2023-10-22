@@ -1,4 +1,4 @@
-module gosubmit
+module godetect
 
 go 1.20
 

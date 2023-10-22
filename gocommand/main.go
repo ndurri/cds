@@ -2,59 +2,52 @@ package main
 
 import (
 	"os"
-	"log"
+	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-lambda-go/events"
-	"gocommand/cds"
 	"gocommand/command"
 	"gocommand/s3"
+	"gocommand/sqs"
+	"encoding/json"
 )
 
-var decSubmitter = os.Getenv("DEC_SUBMITTER")
-var movSubmitter = os.Getenv("MOV_SUBMITTER")
+var bucket string
+var sendQueue string
 
 type Request struct {
 	UUID string
 	From string
 	Subject string
 	Command string
-	Submitter string
-	DocType   cds.DocType
 }
 
-func handleLambda(event events.S3Event) {
-	bucket := event.Records[0].S3.Bucket.Name
-	key := event.Records[0].S3.Object.Key
+func handleLambda(event events.SQSEvent) {
 	req := Request{}
-	if err := s3.LoadJSON(bucket, key, &req); err != nil {
-		log.Println(err)
+	if err := json.Unmarshal([]byte(event.Records[0].Body), &req); err != nil {
+		fmt.Println(err)
 		return
 	}
-	doc, doctype, err := command.Parse(req.Command)
+	fmt.Printf("Processing request %s.\n", req.UUID)
+	doc, err := command.Parse(req.Command)
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 		return
 	}
 	if doc == "" {
-		log.Println("Command not found.")
+		fmt.Println("Command not found.")
 		return		
 	}
-	req.DocType = doctype
-	if doctype == cds.MovementType {
-		req.Submitter = movSubmitter
-	} else {
-		req.Submitter = decSubmitter
-	}
-	if err := s3.SaveJSON(bucket, "requests/" + req.UUID, req); err != nil {
-		log.Println(err)
-		return
-	}
 	if err := s3.Save(bucket, "payloads/" + req.UUID, doc); err != nil {
-		log.Println(err)
+		fmt.Println(err)
 		return
 	}
+	err = sqs.Send(sendQueue, event.Records[0].Body)
+	fmt.Println("Done.")
 }
 
 func main() {
+	bucket = os.Getenv("BUCKET")
+	sendQueue = os.Getenv("SEND_QUEUE")
+
 	lambda.Start(handleLambda)
 }

@@ -28,6 +28,17 @@ resource "aws_iam_role_policy_attachment" "submit-userdata-write" {
 	policy_arn = aws_iam_policy.userdata-write.arn
 }
 
+resource "aws_iam_role_policy_attachment" "submit-payloadwaitingsubmit-read" {
+	role       = aws_iam_role.submit.name
+	policy_arn = aws_iam_policy.payloadwaitingsubmit-read.arn
+}
+
+data "archive_file" "submit" {
+  type        = "zip"
+  source_file = "../gosubmit/bootstrap"
+  output_path = "../gosubmit.zip"
+}
+
 resource "aws_lambda_function" "submit" {
 	filename      = "../gosubmit.zip"
 	function_name = "submit"
@@ -41,9 +52,10 @@ resource "aws_lambda_function" "submit" {
 
 	environment {
 		variables = {
-			TOKEN_URL = "https://test-api.service.hmrc.gov.uk/oauth/token"
+			API_HOST = var.API_HOST
 			CLIENT_ID = var.CLIENT_ID
 			CLIENT_SECRET = var.CLIENT_SECRET
+			APPDATA_BUCKET = aws_s3_bucket.appdata.bucket
 			TOKEN_BUCKET = aws_s3_bucket.userdata.bucket
       DEC_SUBMITTER = "GB906263308468"
       MOV_SUBMITTER = "GB417869120000"
