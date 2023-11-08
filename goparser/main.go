@@ -1,38 +1,43 @@
 package main
 
 import (
-	"os"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-lambda-go/events"
 	"strings"
-	"github.com/google/uuid"
 	"goparser/mail"
 	"goparser/s3"
-	"goparser/sqs"
+	"goparser/cds"
+	"goparser/xmlfactory"
+	"github.com/google/uuid"
+	"encoding/xml"
 )
-
-var commandQueue string
-var payloadQueue string
 
 type Request struct {
 	UUID string
 	From string
 	Subject string
 	Command string
+	DocType string
 }
 
 func handleXML(message *mail.Message, bucket string) error {
 	fmt.Println("Found XML attachment. Sending direct.")
+	var e xmlfactory.Envelope
+	if err := xml.Unmarshal([]byte(message.XMLContent), &e); err != nil {
+		return err
+	}
+	docType := string(e.Content.(cds.Request).DocType())
 	req := Request{
 		UUID: uuid.New().String(),
 		From: message.From,
 		Subject: message.Subject,
+		DocType: docType,
 	}
 	if err := s3.Save(bucket, "payloads/" + req.UUID, message.XMLContent); err != nil {
 		return err
 	}
-	if err := sqs.SendJSON(payloadQueue, req); err != nil {
+	if err := s3.SaveJSON(bucket, "requests/" + req.UUID, &req); err != nil {
 		return err
 	}
 	return nil
@@ -47,7 +52,7 @@ func handleCommand(message *mail.Message, bucket string) error {
 		Subject: message.Subject,
 		Command: lines[0],
 	}
-	if err := sqs.SendJSON(commandQueue, req); err != nil {
+	if err := s3.SaveJSON(bucket, "commands/" + req.UUID, &req); err != nil {
 		return err
 	}
 	return nil
@@ -83,8 +88,13 @@ func handleLambda(event events.S3Event) {
 	}
 }
 
+func init() {
+	xmlfactory.Register("inventoryLinkingConsolidationRequest", (*cds.Consolidation)(nil))
+	xmlfactory.Register("inventoryLinkingMovementRequest", (*cds.Movement)(nil))
+	xmlfactory.Register("inventoryLinkingQueryRequest", (*cds.Query)(nil))
+	xmlfactory.Register("MetaData", (*cds.MetaData)(nil))	
+}
+
 func main() {
-	commandQueue = os.Getenv("COMMAND_QUEUE")
-	payloadQueue = os.Getenv("PAYLOAD_QUEUE")
 	lambda.Start(handleLambda)
 }
