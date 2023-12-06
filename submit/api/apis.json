@@ -1,10 +1,10 @@
 {
 	"Declaration": {
-		"endpoint": "/customs/declarations",
 		"headers": {
 			"accept": "application/vnd.hmrc.2.0+xml",
 			"content-type": "application/xml; charset=UTF-8"
-		}
+		},
+		"endpoint": "/customs/declarations"
 	},
 	"Amendment": {
 		"headers": {
