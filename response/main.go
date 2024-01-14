@@ -56,7 +56,7 @@ func handler(event *events.APIGatewayProxyRequest) {
 		return
 	}
 	key := fmt.Sprintf("%s%s/%s", ResponsePrefix, convoId, guid)
-	if err := s3.Put(ResponseBucket, key); err != nil {
+	if err := s3.Put(ResponseBucket, key, body); err != nil {
 		fmt.Println(err)
 		return
 	}
