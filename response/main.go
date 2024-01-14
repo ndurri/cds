@@ -40,8 +40,7 @@ func getHeader(headers map[string]string, name string) string {
 }
 
 func handler(event *events.APIGatewayProxyRequest) {
-	sourceIP := event.RequestContext.Identity.SourceIP
-	fmt.Printf("Received response from %s\n", sourceIP)
+	fmt.Printf("Received response from %s\n", event.RequestContext.Identity.SourceIP)
 	convoId := getHeader(event.Headers, "x-conversation-id")
 	if convoId == "" {
 		fmt.Println("ConversationId not found in headers.")
@@ -56,14 +55,15 @@ func handler(event *events.APIGatewayProxyRequest) {
 		fmt.Println(err)
 		return
 	}
-	if err := s3.Put(ResponseBucket, ResponsePrefix + guid, body); err != nil {
+	key := fmt.Sprintf("%s%s/%s", ResponsePrefix, convoId, guid)
+	if err := s3.Put(ResponseBucket, key); err != nil {
 		fmt.Println(err)
 		return
 	}
 	res := response.Message{
 		RequestId: convoId,
 		Bucket: ResponseBucket,
-		Key: ResponsePrefix + guid,
+		Key: key,
 	}
 	if err := sns.PublishJSON(notifyTopic, &res); err != nil {
 		fmt.Println(err)
