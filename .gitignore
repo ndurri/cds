@@ -1,0 +1,4 @@
+*.zip
+bootstrap
+.DS_Store
+*.exe
