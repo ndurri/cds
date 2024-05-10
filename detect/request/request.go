@@ -28,3 +28,12 @@ func FromJSON(content string) (*Request, error) {
 	}
 	return &req, nil
 }
+
+func (r Request) ToJSON() (*string, error) {
+	content, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	retstr := string(content)
+	return &retstr, nil
+}

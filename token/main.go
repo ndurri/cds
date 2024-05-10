@@ -3,12 +3,9 @@ package main
 import (
 	"os"
 	"fmt"
-	"token/s3"
+	"token/aws"
 	"token/oauth"
 	"token/request"
-	"token/sns"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/events"
 	"strings"
 )
 
@@ -52,19 +49,20 @@ func loadToken(id string) (*oauth.Token, error) {
 	}
 	fmt.Println("Token not in cache. Loading.")
 	bucket, prefix := splitPrefix(TokenBucket)
-	content, err := s3.Get(bucket, prefix + id)
+	content, err := aws.S3.Get(bucket, prefix + id)
 	if err != nil {
 		return nil, err
 	}
-	return oauth.TokenFromJSON(content)
+	return oauth.TokenFromJSON(string(content))
 }
 
 func saveToken(id string, token *oauth.Token) error {
 	bucket, prefix := splitPrefix(TokenBucket)
-	if err := s3.PutAsJSON(bucket, prefix + id, token); err != nil {
+	content, err := token.ToJSON()
+	if err != nil {
 		return err
 	}
-	return nil
+	return aws.S3.Put(bucket, prefix + id, []byte(*content))
 }
 
 func getValidToken(submitter string) (*oauth.Token, error) {
@@ -89,9 +87,9 @@ func getValidToken(submitter string) (*oauth.Token, error) {
 	return token, nil
 }
 
-func lambdaMain(event events.SNSEvent) {
-	fmt.Printf("Received notification on topic %s\n", event.Records[0].SNS.TopicArn)
-	request, err := request.FromJSON(event.Records[0].SNS.Message)
+func processMessage(message string) {
+	fmt.Println("token: Received notification.")
+	request, err := request.FromJSON(message)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -111,13 +109,21 @@ func lambdaMain(event events.SNSEvent) {
 	}
 	fmt.Println("Token found. Adding to request.")
 	request.AccessToken = token.AccessToken
-	if err := sns.PublishJSON(NotifyTopic, request); err != nil {
+	content, err := request.ToJSON()
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("Finished.")
+	if err := aws.SNS.Put(NotifyTopic, *content); err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("token: Finished.")
 }
 
 func main() {
-	lambda.Start(lambdaMain)
+	if err := aws.Config(); err != nil {
+		panic(err)
+	}
+	aws.Lambda.StartSNS(processMessage)
 }

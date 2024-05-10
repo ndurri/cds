@@ -1,14 +1,11 @@
 package main
 
 import (
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/events"
-	"reply/s3"
+	"reply/aws"
 	"reply/request"
 	"reply/response"
 	"reply/mail"
 	"net/smtp"
-	"encoding/json"
 	"os"
 	"fmt"
 	"html"
@@ -52,19 +49,27 @@ func sendMail(to string, subject string, payload string) error {
 	return nil
 }
 
-func lambdaMain(event events.SNSEvent) {
-	fmt.Printf("Received notification on topic %s\n", event.Records[0].SNS.TopicArn)
-	response := response.Message{}
-	if err := json.Unmarshal([]byte(event.Records[0].SNS.Message), &response); err != nil {
+func getRequest(bucket, key string) (*request.Message, error) {
+	content, err := aws.S3.Get(bucket, key)
+	if err != nil {
+		return nil, err
+	}
+	return request.FromJSON(string(content))
+}
+
+func processMessage(message string) {
+	fmt.Println("reply: Received notification.")
+	response, err := response.FromJSON(message)
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	bucket, prefix := splitPrefix(RequestBucket)
 	fmt.Printf("Retrieving request from %s:%s\n", bucket, prefix + response.RequestId)
-	request := request.Message{}
-	if err := s3.GetJSON(bucket, prefix + response.RequestId, &request); err != nil {
+	request, err := getRequest(bucket, prefix + response.RequestId)
+	if err != nil {
 		fmt.Println(err)
-		return
+		return		
 	}
 	if request.From == "" {
 		fmt.Println("Originator not found in request. Unable to send reply.")
@@ -72,18 +77,21 @@ func lambdaMain(event events.SNSEvent) {
 		return
 	}
 	fmt.Printf("Retrieving response from %s:%s\n", response.Bucket, response.Key)
-	payload, err := s3.Get(response.Bucket, response.Key)
+	payload, err := aws.S3.Get(response.Bucket, response.Key)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	if err := sendMail(request.From, request.Subject, payload); err != nil {
+	if err := sendMail(request.From, request.Subject, string(payload)); err != nil {
 		fmt.Println(err)
 		return		
 	}
-	fmt.Println("Finished.")
+	fmt.Println("reply: Finished.")
 }
 
 func main() {
-	lambda.Start(lambdaMain)
+	if err := aws.Config(); err != nil {
+		panic(err)
+	}
+	aws.Start.SNS(processMessage)
 }

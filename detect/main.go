@@ -3,14 +3,11 @@ package main
 import (
 	"os"
 	"fmt"
+	"detect/aws"
 	"detect/cds"
 	"detect/xmlfactory"
 	"detect/request"
-	"detect/s3"
-	"detect/sns"
 	"encoding/xml"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/events"
 )
 
 var NotifyTopic string = os.Getenv("NEXT_TOPIC")
@@ -24,28 +21,32 @@ func detect(payload string) (string, error) {
 	return string(docType), nil
 }
 
-func handleLambda(event events.SNSEvent) {
-	fmt.Printf("Received notification on topic %s\n", event.Records[0].SNS.TopicArn)
-	request, err := request.FromJSON(event.Records[0].SNS.Message)
+func processMessage(message string) {
+	fmt.Println("Received notification")
+	request, err := request.FromJSON(message)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	fmt.Printf("Processing detect request for %s:%s\n", request.Bucket, request.Key)
-	payload, err := s3.Get(request.Bucket, request.Key)
+	payload, err := aws.S3.Get(request.Bucket, request.Key)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	doctype, err := detect(payload)
+	doctype, err := detect(string(payload))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	request.DocType = doctype
 	fmt.Printf("Document type is %s\n", doctype)
-	err = sns.PublishJSON(NotifyTopic, request)
+	content, err := request.ToJSON()
 	if err != nil {
+		fmt.Println(err)
+		return
+	}	
+	if err = aws.SNS.Put(NotifyTopic, *content); err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -60,5 +61,6 @@ func init() {
 }
 
 func main() {
-	lambda.Start(handleLambda)
+	aws.Config()
+	aws.Lambda.StartSNS(processMessage)
 }

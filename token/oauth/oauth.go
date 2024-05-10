@@ -35,6 +35,15 @@ func TokenFromJSON(content string) (*Token, error) {
 	return token, nil
 }
 
+func (t Token) ToJSON() (*string, error) {
+	content, err := json.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+	retstr := string(content)
+	return &retstr, nil
+}
+
 func (t *Token) Expired() bool {
 	expires := t.Created.Add(time.Second * time.Duration(t.ExpiresIn))
 	return time.Now().After(expires)

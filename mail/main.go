@@ -3,14 +3,12 @@ package main
 import (
 	"os"
 	"fmt"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/events"
+	"mail/aws"
 	"mail/request"
 	"mail/mail"
 	"mail/command"
-	"mail/s3"
-	"mail/sns"
 	"strings"
+	"encoding/json"
 )
 
 var PayloadBucket = os.Getenv("PAYLOAD_BUCKET")
@@ -26,12 +24,16 @@ func splitPrefix(path string) (string, string) {
 
 func handleXML(req *request.Request, xml string) error {
 	bucket, prefix := splitPrefix(PayloadBucket)
-	if err := s3.Put(bucket, prefix + req.UUID, xml); err != nil {
+	if err := aws.S3.Put(bucket, prefix + req.UUID, []byte(xml)); err != nil {
 		return err
 	}
 	req.Bucket = bucket
 	req.Key = prefix + req.UUID
-	if err := sns.PublishJSON(NotifyTopic, req); err != nil {
+	content, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+	if err := aws.SNS.Put(NotifyTopic, string(content)); err != nil {
 		return err
 	}
 	return nil
@@ -45,17 +47,14 @@ func handleCommand(req *request.Request, text string) error {
 	return handleXML(req, xml)
 }
 
-func handleLambda(event events.S3Event) {
-	bucket := event.Records[0].S3.Bucket.Name
-	key := event.Records[0].S3.Object.URLDecodedKey
+func processRequest(bucket, key string) {
 	fmt.Printf("Received S3 notification from %s:%s\n", bucket, key)
-	rawMail, err := s3.Get(bucket, key)
+	rawMail, err := aws.S3.Get(bucket, key)
 	if err != nil {
 		fmt.Println(err)
-		fmt.Println(event)
 		return
 	}
-	parsed, err := mail.Parse(rawMail)
+	parsed, err := mail.Parse(string(rawMail))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -82,5 +81,9 @@ func handleLambda(event events.S3Event) {
 }
 
 func main() {
-	lambda.Start(handleLambda)
+	if err := aws.Config(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	aws.Lambda.StartS3(processRequest)
 }
