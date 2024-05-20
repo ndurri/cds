@@ -3,3 +3,4 @@ bootstrap
 .DS_Store
 *.exe
 cds.json
+*.so
